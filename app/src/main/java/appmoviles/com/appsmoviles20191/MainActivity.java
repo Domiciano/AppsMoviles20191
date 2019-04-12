@@ -2,6 +2,7 @@ package appmoviles.com.appsmoviles20191;
 
 import android.Manifest;
 import android.content.Intent;
+import android.net.Uri;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -16,8 +17,9 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.FirebaseDatabase;
 
 import appmoviles.com.appsmoviles20191.db.DBHandler;
+import appmoviles.com.appsmoviles20191.model.Amigo;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements AdapterAmigos.OnItemClickListener{
 
     private RecyclerView lista_amigos;
     private Button btn_agregar;
@@ -66,6 +68,7 @@ public class MainActivity extends AppCompatActivity {
         lista_amigos = findViewById(R.id.lista_amigos);
         btn_agregar = findViewById(R.id.btn_agregar);
         adapterAmigos = new AdapterAmigos();
+        adapterAmigos.setListener(this);
         lista_amigos.setLayoutManager(new LinearLayoutManager(this));
         lista_amigos.setAdapter(adapterAmigos);
         lista_amigos.setHasFixedSize(true);
@@ -94,10 +97,15 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        adapterAmigos.showAllAmigos(localdb.getAllAmigos());
+        adapterAmigos.showAllAmigos(localdb.getAllAmigosOfUser(auth.getCurrentUser().getUid()));
     }
 
 
-
+    @Override
+    public void onItemClick(Amigo amigo) {
+        Intent i = new Intent( Intent.ACTION_CALL );
+        i.setData( Uri.parse("tel:"+amigo.getTelefono()) );
+        startActivity(i);
+    }
 }
 
