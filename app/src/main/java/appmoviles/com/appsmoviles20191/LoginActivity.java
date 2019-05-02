@@ -81,7 +81,7 @@ public class LoginActivity extends AppCompatActivity {
                 }).addOnFailureListener(new OnFailureListener() {
                     @Override
                     public void onFailure(@NonNull Exception e) {
-                        Toast.makeText(LoginActivity.this, "No se pudo ingresar", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(LoginActivity.this, "No se pudo ingresar" + e.getMessage(), Toast.LENGTH_SHORT).show();
                     }
                 });
 
