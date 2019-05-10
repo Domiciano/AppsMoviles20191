@@ -25,6 +25,11 @@
         android:text="Abrir Galería"
         android:id="@+id/btn_open_gal"/>
 
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#aaa"
+        android:layout_marginBottom="10dp"></View>
 
 
     <EditText

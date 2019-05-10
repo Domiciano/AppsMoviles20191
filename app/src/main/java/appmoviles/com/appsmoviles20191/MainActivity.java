@@ -38,6 +38,9 @@ public class MainActivity extends AppCompatActivity implements AdapterAmigos.OnI
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        Intent ser = new Intent(this, NotificationService.class);
+        startService(ser);
+
 
         rtdb = FirebaseDatabase.getInstance();
 
@@ -113,6 +116,14 @@ public class MainActivity extends AppCompatActivity implements AdapterAmigos.OnI
     public void onItemClick(Amigo amigo) {
         Intent i = new Intent( Intent.ACTION_CALL );
         i.setData( Uri.parse("tel:"+amigo.getTelefono()) );
+        startActivity(i);
+    }
+
+    @Override
+    public void onChat(Amigo amigo) {
+        //Vamos a abrir la ventana de chat
+        Intent i = new Intent(this, ChatActivity.class);
+        i.putExtra("tel",amigo.getTelefono());
         startActivity(i);
     }
 }

@@ -9,6 +9,7 @@ import android.os.Environment;
 import android.os.StrictMode;
 import android.preference.PreferenceManager;
 import android.provider.MediaStore;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
@@ -19,15 +20,26 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 
+import com.bumptech.glide.Glide;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.UUID;
 
 import appmoviles.com.appsmoviles20191.db.DBHandler;
 import appmoviles.com.appsmoviles20191.model.Amigo;
+import appmoviles.com.appsmoviles20191.model.Usuario;
 import appmoviles.com.appsmoviles20191.util.UtilDomi;
 
 public class AgregarAmigoActivity extends AppCompatActivity {
@@ -46,7 +58,9 @@ public class AgregarAmigoActivity extends AppCompatActivity {
     private File photoFile;
     FirebaseDatabase rtdb;
     FirebaseAuth auth;
+    FirebaseStorage storage;
     private Button btn_open_gal;
+    private Usuario me;
 
     private boolean agregoDatos = false;
 
@@ -64,6 +78,7 @@ public class AgregarAmigoActivity extends AppCompatActivity {
         db = DBHandler.getInstance(this);
         rtdb = FirebaseDatabase.getInstance();
         auth = FirebaseAuth.getInstance();
+        storage = FirebaseStorage.getInstance();
 
         et_nombre = findViewById(R.id.et_nombre);
         et_edad = findViewById(R.id.et_edad);
@@ -123,6 +138,21 @@ public class AgregarAmigoActivity extends AppCompatActivity {
             }
         });
 
+
+        //AutoID
+        rtdb.getReference().child("user").child(auth.getCurrentUser().getUid()).addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                me = dataSnapshot.getValue(Usuario.class);
+                cargarFotoPerfil();
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        });
+
     }
 
 
@@ -130,15 +160,40 @@ public class AgregarAmigoActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         //Luego de tomar la foto y guardarla
         if (requestCode == CAMERA_CALLBACK_ID && resultCode == RESULT_OK) {
-            Bitmap imagen = BitmapFactory.decodeFile(photoFile.toString());
-            img_amigo.setImageBitmap(imagen);
+            //Bitmap imagen = BitmapFactory.decodeFile(photoFile.toString());
+            //img_amigo.setImageBitmap(imagen);
+            subirImagen();
         }
-        if(requestCode == GALLERY_CALLBACK_ID && resultCode == RESULT_OK){
+        if (requestCode == GALLERY_CALLBACK_ID && resultCode == RESULT_OK) {
             Uri uri = data.getData();
-            photoFile = new File(  UtilDomi.getPath(this, uri)  );
-            Bitmap m = BitmapFactory.decodeFile(photoFile.toString());
-            img_amigo.setImageBitmap(m);
+            photoFile = new File(UtilDomi.getPath(this, uri));
+            subirImagen();
         }
+    }
+
+    private void subirImagen() {
+        try {
+            StorageReference ref = storage.getReference().child("profiles").child(me.getTelefono());
+            FileInputStream fis = new FileInputStream(photoFile);
+            ref.putStream(fis).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+                @Override
+                public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+                    cargarFotoPerfil();
+                }
+            });
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void cargarFotoPerfil() {
+        StorageReference ref = storage.getReference().child("profiles").child(me.getTelefono());
+        ref.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
+            @Override
+            public void onSuccess(Uri uri) {
+                Glide.with(AgregarAmigoActivity.this).load(uri).into(img_amigo);
+            }
+        });
     }
 
     //Cargamos
@@ -171,7 +226,7 @@ public class AgregarAmigoActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
-        if(agregoDatos) {
+        if (agregoDatos) {
             PreferenceManager.getDefaultSharedPreferences(this).edit()
                     .remove("nombre")
                     .remove("edad")
